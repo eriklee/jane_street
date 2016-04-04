@@ -20,8 +20,9 @@ printInfo :: State -> IO ()
 printInfo s@State{..} = do
     let value = getValue s
     putStrLn $ "Total Value: " ++ show value
---    putStrLn $ "Total Length: " ++ show (length path)
-    --print (reverse path)
+    putStrLn $ "Total Length: " ++ show (length path)
+    print die
+    print (reverse path)
 
 getValue :: State -> Integer
 getValue State{..} = product $ map (fromIntegral . snd) $ fixPathConstraints die path
@@ -38,7 +39,7 @@ runDFS end state = go [state]
   where
     go [] = []
     go (x:xs) = if isFinished x
-                  then x : go (doMoves x ++ xs)
+                  then x : go xs
                   else go (doMoves x ++ xs)
     isFinished State{..} = getGridCell pathGrid end
 
@@ -219,7 +220,7 @@ printGrid Grid{..} = go (V.toList cells)
 
 type Path = [(GridPosition, GridValue)]
 
-getPosFromPath :: Path -> (GridPosition)
+getPosFromPath :: Path -> GridPosition
 getPosFromPath = fst . head
 
 data State = State
