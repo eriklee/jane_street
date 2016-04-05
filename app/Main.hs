@@ -3,7 +3,7 @@ module Main
 (main) where
 
 import qualified Data.Vector as V
---import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Unboxed as VU
 import Data.Maybe
 
 main :: IO ()
@@ -41,7 +41,7 @@ runDFS end state = go [state]
     go (x:xs) = if isFinished x
                   then x : go xs
                   else go (doMoves x ++ xs)
-    isFinished State{..} = getGridCell pathGrid end
+    isFinished State{..} = getUGridCell pathGrid end
 
 --isFinished end State{..} = getPosFromPath path == end
 
@@ -88,7 +88,7 @@ realDie :: Die
 realDie = Die DfA DfC $ FV (Just 1) Nothing Nothing Nothing Nothing Nothing
 --answerDie = Die DfA DfC [(DfA, 1), (DfB, 7), (DfC, 3), (DfD, 8), (DfE, 6), (DfF, 6)]
 realState :: State
-realState = State realGrid realDie [((0,0), GVValue 1)] $ Grid 12 12 (V.replicate 144 False)
+realState = State realGrid realDie [((0,0), GVValue 1)] $ UGrid 12 12 (VU.replicate 144 False)
 
 
 --- Die Definitions
@@ -211,6 +211,11 @@ data Grid a = Grid
             , cells :: V.Vector a
             } deriving (Show)
 
+data UnboxedGrid a = UGrid
+            { uwidth :: Int
+            , uheight :: Int
+            , ucells :: VU.Vector a
+            } deriving (Show)
 {--
 printGrid Grid{..} = go (V.toList cells)
   where
@@ -227,7 +232,7 @@ data State = State
             { grid :: Grid (Maybe Value)
             , die :: Die
             , path :: Path
-            , pathGrid :: Grid Bool
+            , pathGrid :: UnboxedGrid Bool
             } deriving (Show)
 
 doMoves :: State -> [State]
@@ -257,8 +262,8 @@ moveDie s@State{..} dir = s{die=die'', path=path', pathGrid=pathGrid'}
 addMoveToPath :: GridPosition -> Die -> Path -> Path
 addMoveToPath pos die path = (pos, valOrFace die) : path
 
-addMoveToPathGrid :: Grid Bool -> GridPosition -> Grid Bool
-addMoveToPathGrid path@Grid{..} pos = path { cells = cells `V.unsafeUpd` [(getGridIndex path pos, True)] }
+addMoveToPathGrid :: UnboxedGrid Bool -> GridPosition -> UnboxedGrid Bool
+addMoveToPathGrid path@UGrid{..} pos = path { ucells = ucells `VU.unsafeUpd` [(getUGridIndex path pos, True)] }
 
 valOrFace :: Die -> GridValue
 valOrFace d@Die{..} =
@@ -274,8 +279,8 @@ gridDirections grid (x,y) = catMaybes [checkN, checkS, checkE, checkW]
         checkS = if y < (height grid - 1) then Just South else Nothing
         checkE = if x < (width grid - 1) then Just East else Nothing
 
-pathAllows :: Grid Bool -> GridPosition -> Direction -> Bool
-pathAllows pathGrid pos dir = not $ getGridCell pathGrid pos'
+pathAllows :: UnboxedGrid Bool -> GridPosition -> Direction -> Bool
+pathAllows pathGrid pos dir = not $ getUGridCell pathGrid pos'
   where
     pos' = changePos pos dir
 
@@ -297,5 +302,11 @@ dieAllows grid pos die dir = isNothing dv || isNothing gc || dv == gc
 getGridCell :: Grid a -> GridPosition -> a
 getGridCell g@Grid{..} pos = cells `V.unsafeIndex` getGridIndex g pos
 
+getUGridCell :: (VU.Unbox a) => UnboxedGrid a -> GridPosition -> a
+getUGridCell g@UGrid{..} pos = ucells `VU.unsafeIndex` getUGridIndex g pos
+
 getGridIndex :: Grid a -> (Int, Int) -> Int
 getGridIndex Grid{..} (x,y) = x + y * width
+
+getUGridIndex :: UnboxedGrid a -> (Int, Int) -> Int
+getUGridIndex UGrid{..} (x,y) = x + y * uwidth
