@@ -7,14 +7,16 @@ import qualified Data.Vector.Unboxed as VU
 import Data.Maybe
 
 main :: IO ()
-main = do --profiler
-    let paths = runReal
+main = do profiler
+{--main = do --profiler
+    let paths = runTest
     --let bestPath = maximumBy (comparing getValue) paths
     --printInfo bestPath
-    mapM_ printInfo paths
+    mapM_ printInfo paths --}
 
---profiler = mapM_ printInfo $ runDFS (7,7) $ State bigProfilingGrid realDie [((0,0), GVValue 1)]
---                                                    (Grid 8 8 (V.replicate 64 False))
+profiler = mapM_ printInfo $ runDFS (7,7) $ State bigProfilingGrid profilingDie [((0,0), GVValue 6)] (UGrid 8 8 (VU.replicate 64 False))
+
+profilingDie = Die DfA DfC $ FV (Just 6) Nothing Nothing Nothing Nothing Nothing
 
 printInfo :: State -> IO ()
 printInfo s@State{..} = do
@@ -43,20 +45,11 @@ runDFS end state = go [state]
                   else go (doMoves x ++ xs)
     isFinished State{..} = getUGridCell pathGrid end
 
---isFinished end State{..} = getPosFromPath path == end
-
 --- Data
 runReal :: [State]
 runReal = runDFS (11,11) realState
 --runAnswer = runDFS (11,11) $ State realGrid answerDie [((0,0), GVValue 1)]
-
---testDie = Die DfA DfC [(DfA, 1), (DfB, 2), (DfC, 3), (DfD, 4)]
---testGrid = Grid 2 2 (V.fromList [Just 1,Just 2,Nothing,Just 3])
---testState = State testGrid testDie [((0,0), GVValue 1)]
-
---bigTestGrid = Grid 5 5 (V.fromList (Just <$> [3,4,1,7,5, 1,2,4,3,5, 2,4,3,6,2, 9,5,7,2,3, 5,8,3,4,1]))
---bigTestDie = Die DfA DfC $ FV (Just 3) (Just 4) (Just 4) (Just 8) (Just 5) (Just 1)
---bigTestState = State bigTestGrid bigTestDie [((0,0), GVValue 3)] $ Grid 5 5 (V.replicate 25 False)
+runTest = runDFS (4,6) danielState
 
 realGrid :: Grid (Maybe Value)
 realGrid = Grid 12 12 (V.fromList
@@ -73,7 +66,21 @@ realGrid = Grid 12 12 (V.fromList
     Just 6,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing, Just 3,
     Just 2, Just 1, Just 6, Just 6, Just 4, Just 5, Just 2, Just 1, Just 1, Just 1, Just 7, Just 1])
 
-{-- bigProfilingGrid :: Grid (Maybe Value)
+danielGrid :: Grid (Maybe Value)
+danielGrid = Grid 5 7 (V.fromList
+  [ Just 3 , Just 4, Just 1, Just 7, Just 5,
+    Just 1 , Just 2,Nothing, Just 3, Just 5,
+    Nothing,Nothing,Nothing,Nothing,Nothing,
+    Nothing,Nothing,Nothing,Nothing,Nothing,
+    Nothing, Just 4, Just 3,Nothing, Just 2,
+    Nothing, Just 5,Nothing, Just 2, Just 3,
+    Just 5 ,Nothing,Nothing, Just 4, Just 1])
+danielDie :: Die
+danielDie = Die DfA DfC $ FV (Just 3) Nothing Nothing Nothing Nothing Nothing
+danielState :: State
+danielState = State danielGrid danielDie [((0,0), GVValue 3)] $ UGrid 5 7 (VU.replicate 35 False)
+
+bigProfilingGrid :: Grid (Maybe Value)
 bigProfilingGrid = Grid 8 8 (V.fromList
   [ Just 6, Just 4, Just 1, Just 8, Just 1, Just 4, Just 2, Just 1,
     Just 1,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing, Just 1,
@@ -82,7 +89,7 @@ bigProfilingGrid = Grid 8 8 (V.fromList
     Just 2,Nothing, Just 5,Nothing,Nothing, Just 3,Nothing, Just 5,
     Just 5,Nothing, Just 1, Just 1, Just 2, Just 3,Nothing, Just 4,
     Just 1,Nothing,Nothing,Nothing,Nothing,Nothing,Nothing, Just 3,
-    Just 6, Just 3, Just 6, Just 5, Just 4, Just 3, Just 4, Just 5]) --}
+    Just 6, Just 3, Just 6, Just 5, Just 4, Just 3, Just 4, Just 5])
 
 realDie :: Die
 realDie = Die DfA DfC $ FV (Just 1) Nothing Nothing Nothing Nothing Nothing
