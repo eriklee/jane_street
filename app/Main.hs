@@ -5,14 +5,15 @@ module Main
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
 import Data.Maybe
+import Control.Monad (join)
 
 main :: IO ()
-main = do profiler
-{--main = do --profiler
-    let paths = runTest
+--main = do profiler
+main = do
+    let paths = runReal
     --let bestPath = maximumBy (comparing getValue) paths
     --printInfo bestPath
-    mapM_ printInfo paths --}
+    mapM_ printInfo paths
 
 profiler = mapM_ printInfo $ runDFS (7,7) $ State bigProfilingGrid profilingDie [((0,0), GVValue 6)] (UGrid 8 8 (VU.replicate 64 False))
 
@@ -249,9 +250,9 @@ doMoves s@State{..} =
     -- check that grid doesn't block move
     dirs = gridDirections grid pos
     -- check that path doesn't block move (i.e repeating a space)
-    dirs' = filter (pathAllows pathGrid pos) dirs
+    dirs'' = filter (dieAllows grid pos die) . filter (pathAllows pathGrid pos) $ dirs in
     -- check that the die allows a move
-    dirs'' = filter (dieAllows grid pos die) dirs' in
+    --dirs'' = filter (dieAllows grid pos die) dirs' in
   -- actually move/rotate die, add to path
   map (moveDie s) dirs''
 
@@ -279,12 +280,12 @@ valOrFace d@Die{..} =
         Just val -> GVValue val
 
 gridDirections :: Grid a -> GridPosition -> [Direction]
-gridDirections grid (x,y) = catMaybes [checkN, checkS, checkE, checkW]
+gridDirections grid (x,y) = join [checkN, checkS, checkE, checkW]
     where
-        checkN = if y > 0 then Just North else Nothing
-        checkW = if x > 0 then Just West else Nothing
-        checkS = if y < (height grid - 1) then Just South else Nothing
-        checkE = if x < (width grid - 1) then Just East else Nothing
+        checkN = if y > 0 then [North] else []
+        checkW = if x > 0 then [West] else []
+        checkS = if y < (height grid - 1) then [South] else []
+        checkE = if x < (width grid - 1) then [East] else []
 
 pathAllows :: UnboxedGrid Bool -> GridPosition -> Direction -> Bool
 pathAllows pathGrid pos dir = not $ getUGridCell pathGrid pos'
