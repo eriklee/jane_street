@@ -38,7 +38,7 @@ notVisited :: Grid (Maybe a) -> GridPosition -> Bool
 notVisited g p = isNothing $ getGridValue g p
 
 getGridValue :: Grid a -> GridPosition -> a
-getGridValue Grid{..} (x,y) = cells V.unsafeIndex (y * width + x)
+getGridValue Grid{..} (x,y) = cells V.! (y * width + x)
 
 validMoves :: Grid (Maybe a) -> GridPosition -> [GridPosition]
 validMoves grid = filter (notVisited grid) . filter (positionInGrid grid) . nextMoves
@@ -47,14 +47,14 @@ foldGridRow :: (b -> a -> b) -> b -> Grid a -> Int -> b
 foldGridRow f init grid n = foldl f init (getRow grid n)
 
 getRow :: Grid a -> Int -> [a]
-getRow Grid{..} n = V.toList $ V.unsafeSlice (n * height) width cells
+getRow Grid{..} n = V.toList $ V.slice (n * height) width cells
 --[ cells V.! x | x <- [n * height .. n * height + width - 1] ]
 
 foldGridCol :: (b -> a -> b) -> b -> Grid a -> Int -> b
 foldGridCol f init grid n = foldl f init (getCol grid n)
 
 getCol :: Grid a -> Int -> [a]
-getCol Grid{..} n = [ cells V.unsafeIndex (n + (x * width)) | x <- [0..height - 1] ]
+getCol Grid{..} n = [ cells V.! (n + (x * width)) | x <- [0..height - 1] ]
 
 initialGrid = Grid 8 8 $ V.fromList
     [Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing,
@@ -76,7 +76,7 @@ enumerateMoves filterF grid pos labelIter (Just x) = concatMap mapFun nextGrids
         nextGrids = filter (filterF . fst) $ map (\p -> (labelGridCell grid p (Just x), p)) (validMoves grid pos)
 
 labelGridCell :: Grid a -> GridPosition -> a -> Grid a
-labelGridCell g@Grid{..} pos x = g { cells = cells V.unsafeUpd [(index, x)] }
+labelGridCell g@Grid{..} pos x = g { cells = cells V.// [(index, x)] }
     where index = gridIndex g pos
 
 gridIndex :: Grid a -> GridPosition -> Int
