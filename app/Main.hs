@@ -72,7 +72,7 @@ enumerateMoves grid pos labelIter (Just x) = concatMap mapFun nextGrids
     where
         mapFun (g, pos) = enumerateMoves g pos labelIter nextLabel
         nextLabel = labelIter x
-        nextGrids = map (\p -> (labelGridCell grid p (Just x), p)) (validMoves grid pos)
+        nextGrids = filter (filterBadSums . fst) $ map (\p -> (labelGridCell grid p (Just x), p)) (validMoves grid pos)
 
 labelGridCell :: Grid a -> GridPosition -> a -> Grid a
 labelGridCell g@Grid{..} pos x = g { cells = cells V.// [(index, x)] }
@@ -104,29 +104,10 @@ elevenTo14 g = filter compatibleWith14 potentials
     compatibleWith14 g = fourteen `elem` nextMoves (get13Pos g)
     fourteen = (5,3)
 
-sixteenTo20 :: Grid (Maybe Int) -> [Grid (Maybe Int)]
-sixteenTo20 g = potentials
+sixteenTo28 :: Grid (Maybe Int) -> [Grid (Maybe Int)]
+sixteenTo28 g = potentials
   where
-    potentials = enumerateMoves g (4,5) (\x -> if x == 20 then Nothing else Just (x + 1)) (Just 16)
-
-twentyOneTo24 :: Grid (Maybe Int) -> [Grid (Maybe Int)]
-twentyOneTo24 g = potentials
-  where
-    starting = getGridCell g 20
-    potentials = enumerateMoves g starting (\x -> if x == 24 then Nothing else Just (x + 1)) (Just 21)
-
-twentyFiveTo28 :: Grid (Maybe Int) -> [Grid (Maybe Int)]
-twentyFiveTo28 g = potentials
-  where
-    starting = getGridCell g 24
-    potentials = enumerateMoves g starting (\x -> if x == 28 then Nothing else Just (x + 1)) (Just 25)
-
-getGridCell :: Grid (Maybe Int) -> Int -> (Int, Int)
-getGridCell Grid{..} val = idxToPos idx width
-  where
-    idx = fromJust $ V.elemIndex (Just val) cells
-
-idxToPos n w = n `quotRem` w
+    potentials = enumerateMoves g (4,5) (\x -> if x == 28 then Nothing else Just (x + 1)) (Just 16)
 
 rowSums, colSums :: [Int]
 rowSums = [10, 34, 108, 67, 63, 84, 24, 16]
@@ -143,7 +124,7 @@ lowFilter g = head (getGridColSums g) == 7
 
 elevenFilter g = head (getGridRowSums g) == 10 && take 2 (getGridColSums g) == [7, 14]
 
-solutions = filter lowFilter lowerGrids >>= filter elevenFilter . eightTo11 >>= filter elevenFilter . elevenTo14 >>= filter filterBadSums . sixteenTo20 >>= filter filterBadSums . twentyOneTo24 >>= filter filterBadSums . twentyFiveTo28
+solutions = filter lowFilter lowerGrids >>= filter elevenFilter . eightTo11 >>= filter elevenFilter . elevenTo14 >>= sixteenTo28
 
 maxProduct g = maximum $ map (product . catMaybes . getRow g) [0..7] ++
                          map (product . catMaybes . getCol g) [0..7]
