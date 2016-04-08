@@ -1,11 +1,15 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 module Main
 (main) where
 
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
 import Data.Maybe
+import GHC.Generics
 import Control.Monad (join)
+import Control.Parallel.Strategies
 
 main :: IO ()
 --main = do profiler
@@ -48,7 +52,7 @@ runDFS end state = go [state]
 
 --- Data
 runReal :: [State]
-runReal = runDFS (11,11) realState
+runReal = let startingStates = concatMap doMoves (concatMap doMoves (doMoves realState)) in join (parMap rdeepseq (runDFS (11,11)) startingStates)
 --runAnswer = runDFS (11,11) $ State realGrid answerDie [((0,0), GVValue 1)]
 runTest = runDFS (4,6) danielState
 
@@ -79,7 +83,9 @@ danielGrid = Grid 5 7 (V.fromList
 danielDie :: Die
 danielDie = Die DfA DfC $ FV (Just 3) Nothing Nothing Nothing Nothing Nothing
 danielState :: State
-danielState = State danielGrid danielDie [((0,0), GVValue 3)] $ UGrid 5 7 (VU.replicate 35 False)
+danielState = State danielGrid danielDie [((0,0), GVValue 3)] $ mkPathGrid (5,7)
+
+mkPathGrid (w,h) = UGrid w h $ (VU.replicate (w*h) False) `VU.unsafeUpd` [(0,True)]
 
 bigProfilingGrid :: Grid (Maybe Value)
 bigProfilingGrid = Grid 8 8 (V.fromList
@@ -96,14 +102,14 @@ realDie :: Die
 realDie = Die DfA DfC $ FV (Just 1) Nothing Nothing Nothing Nothing Nothing
 --answerDie = Die DfA DfC [(DfA, 1), (DfB, 7), (DfC, 3), (DfD, 8), (DfE, 6), (DfF, 6)]
 realState :: State
-realState = State realGrid realDie [((0,0), GVValue 1)] $ UGrid 12 12 (VU.replicate 144 False)
+realState = State realGrid realDie [((0,0), GVValue 1)] $ mkPathGrid (12,12)
 
 
 --- Die Definitions
 type Value = Int -- (1-9), but will be multiplied together at the end
-data Direction = North | South | East | West deriving (Show, Eq)
+data Direction = North | South | East | West deriving (Show, Eq, Generic, NFData)
 
-data DieFace = DfA | DfB | DfC | DfD | DfE | DfF deriving (Show, Eq)
+data DieFace = DfA | DfB | DfC | DfD | DfE | DfF deriving (Show, Eq, Generic, NFData)
 {--     -----
  -      | C |
  -  -------------
@@ -118,7 +124,7 @@ data Die = Die
             { topFace :: DieFace -- If this is A in the die above
             , northFace :: DieFace  -- Then this is C (gives the orientation of the die)
             , faceValues :: FaceValues
-            } deriving (Show)
+            } deriving (Show, Generic, NFData)
 
 data FaceValues = FV {
       fvA :: Maybe Value
@@ -127,7 +133,7 @@ data FaceValues = FV {
     , fvD :: Maybe Value
     , fvE :: Maybe Value
     , fvF :: Maybe Value
-    } deriving (Show)
+    } deriving (Show, Generic, NFData)
 
 addFaceValueToDie :: Die -> Maybe Value -> Die
 addFaceValueToDie d@Die{..} Nothing  = d
@@ -211,19 +217,19 @@ opp DfF = DfA
 
 type GridPosition = (Int, Int) -- (x,y), top left is (0,0)
 data GridValue = GVValue Value | GVConstraint DieFace
-    deriving (Show)
+    deriving (Show, Generic, NFData)
 
 data Grid a = Grid
             { width :: Int
             , height :: Int
             , cells :: V.Vector a
-            } deriving (Show)
+            } deriving (Show, Generic, NFData)
 
 data UnboxedGrid a = UGrid
             { uwidth :: Int
             , uheight :: Int
             , ucells :: VU.Vector a
-            } deriving (Show)
+            } deriving (Show, Generic, NFData)
 {--
 printGrid Grid{..} = go (V.toList cells)
   where
@@ -241,7 +247,7 @@ data State = State
             , die :: Die
             , path :: Path
             , pathGrid :: UnboxedGrid Bool
-            } deriving (Show)
+            } deriving (Show, Generic, NFData)
 
 doMoves :: State -> [State]
 doMoves s@State{..} =
