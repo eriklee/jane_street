@@ -1,0 +1,22 @@
+name:                NumberCross3
+version:             0.1.0.0
+synopsis:            Initial project template from stack
+description:         Please see README.md
+homepage:            https://github.com/githubuser/NumberCross3#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Erik Lee
+maintainer:          eriklee113@gmail.com
+copyright:           2016 Author name here
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+executable NumberCross3-exe
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:       base
+                     , sbv
+  default-language:    Haskell2010
